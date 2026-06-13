@@ -95,6 +95,7 @@ export default function App() {
   const [onlineCountBase, setOnlineCountBase] = useState(24102);
   const [realOnlineCount, setRealOnlineCount] = useState<number | null>(null);
   const [realTotalUsers, setRealTotalUsers] = useState<number | null>(null);
+  const [firebaseSetupError, setFirebaseSetupError] = useState<string | null>(null);
 
   // Slowly fluctuate online count to simulate real traffic
   useEffect(() => {
@@ -367,6 +368,20 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async user => {
       if (user) {
         setCurrentUser(user);
+        
+        // Define a fast fallback/initial profile immediately to make the UI interactive and avoid lockouts
+        const initialProfile: UserProfile = {
+          uid: user.uid,
+          displayName: user.displayName || `Grandmaster${user.uid.substring(0, 4)}`,
+          photoURL: user.photoURL || 'https://images.unsplash.com/photo-1548142813-c348350df52b?w=100&auto=format&fit=crop&q=80',
+          rating: 1200,
+          gamesPlayed: 0,
+          gamesWon: 0,
+          status: 'online',
+          createdAt: Date.now(),
+        };
+        setUserProfile(initialProfile);
+
         // Build or Fetch details in Firestore User Profile
         const userRef = doc(db, 'users', user.uid);
         try {
@@ -377,22 +392,16 @@ export default function App() {
             await setDoc(userRef, { status: 'online' }, { merge: true });
           } else {
             // Register new user profile in db
-            const newProfile: UserProfile = {
-              uid: user.uid,
-              displayName: user.displayName || `Grandmaster${user.uid.substring(0, 4)}`,
-              photoURL: user.photoURL || 'https://images.unsplash.com/photo-1548142813-c348350df52b?w=100&auto=format&fit=crop&q=80',
-              rating: 1200,
-              gamesPlayed: 0,
-              gamesWon: 0,
-              status: 'online',
-              createdAt: Date.now(),
-            };
-            await setDoc(userRef, newProfile);
-            setUserProfile(newProfile);
+            await setDoc(userRef, initialProfile);
           }
         } catch (error) {
           console.error('Error fetching user profile from Firestore:', error);
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+          setFirebaseSetupError('Missing or insufficient permissions reading user profile. Ensure firestore.rules is deployed!');
+          try {
+            handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+          } catch (e) {
+            console.error('Captured diagnostic throw:', e);
+          }
         }
       } else {
         setCurrentUser(null);
@@ -400,6 +409,7 @@ export default function App() {
         // Automatically authenticate user anonymously to ensure seamless Online multiplayer
         signInAnonymously(auth).catch(err => {
           console.warn('Anonymous login on boot failed:', err);
+          setFirebaseSetupError('Anonymous Authentication provider is disabled. Please enable it in your Firebase console!');
         });
       }
     });
@@ -454,7 +464,12 @@ export default function App() {
       },
       error => {
         console.error('Firestore Lobby Snapshot failed:', error);
-        handleFirestoreError(error, OperationType.LIST, 'games');
+        setFirebaseSetupError('Missing or insufficient permissions listing open games. Ensure firestore.rules is deployed!');
+        try {
+          handleFirestoreError(error, OperationType.LIST, 'games');
+        } catch (e) {
+          console.error('Captured diagnostic throw:', e);
+        }
       }
     );
 
@@ -854,7 +869,8 @@ export default function App() {
       // Reset local coaching analytics to prevent stales
       setCoachAnalysis(null);
 
-      if (game.isComputerGame) {
+      const isLocalGame = game.isComputerGame || game.gameId === 'local-pass-play' || game.gameId.startsWith('local-');
+      if (isLocalGame) {
         setGame(nextState);
       } else if (isFirebaseConfigured && db) {
         // Broadcast immediately to Firestore Online Room Document
@@ -1200,7 +1216,12 @@ export default function App() {
         }
       },
       error => {
-        handleFirestoreError(error, OperationType.GET, `games/${gameId}`);
+        setFirebaseSetupError('Missing or insufficient permissions loading active game. Please check your firestore.rules!');
+        try {
+          handleFirestoreError(error, OperationType.GET, `games/${gameId}`);
+        } catch (e) {
+          console.error('Captured diagnostic throw:', e);
+        }
       }
     );
 
@@ -1217,7 +1238,12 @@ export default function App() {
         setChatMessages(messages);
       },
       error => {
-        handleFirestoreError(error, OperationType.LIST, `games/${gameId}/messages`);
+        setFirebaseSetupError('Missing or insufficient permissions reading game chat messages. Please check your firestore.rules!');
+        try {
+          handleFirestoreError(error, OperationType.LIST, `games/${gameId}/messages`);
+        } catch (e) {
+          console.error('Captured diagnostic throw:', e);
+        }
       }
     );
   };
@@ -1346,15 +1372,24 @@ export default function App() {
       setCurrentUser(null);
       setUserProfile(null);
     } else {
+      setFirebaseSetupError(null);
       try {
         await signInWithGoogle();
-      } catch (e) {
+      } catch (e: any) {
         console.error('Google popup Auth failed, trying anonymous login...', e);
+        if (e && e.code === 'auth/unauthorized-domain') {
+          setFirebaseSetupError(`Unauthorized Domain: Please add "${window.location.hostname}" to your Firebase Console > Authentication > Settings > Authorized domains list, or run 'set_up_firebase' to reconfigure your environment credentials if needed.`);
+        } else {
+          setFirebaseSetupError(`Google Auth login failed: ${e?.message || String(e)}. Ensure Google Provider is enabled in your Firebase console under Authentication > Sign-in method.`);
+        }
         try {
           const userCred = await signInAnonymously(auth);
           setCurrentUser(userCred.user);
-        } catch (err) {
+        } catch (err: any) {
           console.error('Both logins failed. Using browser guest mode!');
+          if (err && err.code === 'auth/admin-restricted-operation') {
+            setFirebaseSetupError(prev => prev ? `${prev} Additionally, Anonymous Auth is currently disabled in your project console.` : 'Anonymous Auth is currently disabled in your project console. Please enable both "Google" and "Anonymous" in Firebase Console > Authentication > Sign-in method.');
+          }
         }
       }
     }
@@ -1523,6 +1558,46 @@ export default function App() {
 
       {/* Main Container Stage body */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 mt-4 flex-1 w-full grid grid-cols-1">
+        {firebaseSetupError && (
+          <div className="mb-4 bg-amber-950/45 border-2 border-amber-500/30 rounded-lg p-5 flex flex-col md:flex-row items-start gap-4 text-zinc-350 shadow-lg animate-fadeIn">
+            <div className="p-2.5 bg-amber-900/50 rounded-lg text-amber-400 shrink-0 mt-0.5">
+              <AlertCircle className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <h4 className="text-sm font-bold text-amber-200 flex items-center gap-2">
+                ⚠️ Custom Firebase Configuration Action Needed
+              </h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Your application loaded your custom Firebase details, but some cloud operations were blocked:
+              </p>
+              <div className="font-mono text-[11px] bg-[#12110f] p-3 rounded border border-zinc-800 text-amber-400 select-all overflow-x-auto max-w-full">
+                {firebaseSetupError}
+              </div>
+              
+              <div className="text-xs bg-[#1a1815]/60 p-4 rounded border border-amber-900/20 space-y-2.5 leading-relaxed">
+                <p className="font-bold text-zinc-200">Please complete these three simple steps in your Firebase Console:</p>
+                <ol className="list-decimal pl-4.5 space-y-2 text-zinc-400">
+                  <li>
+                    <strong className="text-zinc-200">Deploy Security Rules:</strong> Go to the file <code className="font-mono text-zinc-300 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">firestore.rules</code> (at the root of this workspace), copy all its contents, and paste them into your <strong className="text-zinc-200">Firebase Console &gt; Firestore Database &gt; Rules tab</strong>, then click <strong className="text-zinc-200">Publish</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-zinc-200">Enable Auth Providers:</strong> In your <strong className="text-zinc-200">Firebase Console &gt; Authentication &gt; Sign-in method</strong> tab, click <strong className="text-zinc-200">Add new provider</strong> and enable both <strong className="text-zinc-200">Google</strong> and <strong className="text-zinc-200">Anonymous</strong>, then save them.
+                  </li>
+                  <li>
+                    <strong className="text-zinc-200">Add Vercel to Authorized Domains:</strong> In your <strong className="text-zinc-200">Authentication &gt; Settings &gt; Authorized domains</strong> list, add your deployed Vercel domain (e.g. <code className="font-mono text-emerald-400">{window.location.hostname}</code>) so the pop-up authentication functions perfectly.
+                  </li>
+                </ol>
+              </div>
+            </div>
+            <button 
+              onClick={() => setFirebaseSetupError(null)} 
+              className="text-xs font-semibold text-zinc-400 hover:text-white bg-[#312e2b] border border-zinc-700 md:self-auto px-3 py-1.5 rounded hover:bg-[#3d3a37] transition shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {!game ? (
           /* Landing options & matchmaking lists */
           <Lobby
@@ -1572,10 +1647,19 @@ export default function App() {
                 playerColor={game.blackPlayerId === currentUser?.uid ? 'b' : 'w'}
                 editable={
                   game.status === 'playing' &&
-                  // Ensure it is client's active piece turn
-                  ((game.turn === 'w' && game.whitePlayerId === (currentUser?.uid || 'human')) ||
-                    (game.turn === 'b' && game.blackPlayerId === (currentUser?.uid || 'human')) ||
-                    (game.whitePlayerId === 'human-white' || game.blackPlayerId === 'human-black')) // solo sandwich local play
+                  (() => {
+                    // Local Pass & Play Sandbox
+                    if (game.gameId === 'local-pass-play' || game.whitePlayerId === 'human-white' || game.blackPlayerId === 'human-black') {
+                      return true;
+                    }
+                    // Local Vs CPU Game, Puzzles, or Lessons
+                    const isSingleplayer = game.isComputerGame || activePuzzle || activeLesson || game.gameId.startsWith('local-cpu');
+                    if (isSingleplayer) {
+                      return (game.turn === 'w' && game.whitePlayerId === 'human') || (game.turn === 'b' && game.blackPlayerId === 'human');
+                    }
+                    // Online Multiplayer Room Game
+                    return (game.turn === 'w' && game.whitePlayerId === currentUser?.uid) || (game.turn === 'b' && game.blackPlayerId === currentUser?.uid);
+                  })()
                 }
                 lastMove={
                   game.history.length > 0 ? { from: game.history[game.history.length - 1].from, to: game.history[game.history.length - 1].to } : null

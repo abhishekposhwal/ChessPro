@@ -45,6 +45,21 @@ export const isFirebaseConfigured =
   firebaseConfig.apiKey &&
   !firebaseConfig.apiKey.startsWith('placeholder');
 
+function sanitizeDatabaseId(dbId: string | undefined): string {
+  if (!dbId) return '(default)';
+  const trimmed = dbId.trim();
+  if (
+    trimmed === '' ||
+    trimmed === 'default' ||
+    trimmed === 'placeholder-database-id' ||
+    trimmed === 'databaseid' ||
+    trimmed === '(default)'
+  ) {
+    return '(default)';
+  }
+  return trimmed;
+}
+
 let app;
 let db: any = null;
 let auth: any = null;
@@ -52,7 +67,8 @@ let auth: any = null;
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+    const dbId = sanitizeDatabaseId(firebaseConfig.firestoreDatabaseId);
+    db = getFirestore(app, dbId);
     auth = getAuth(app);
   } catch (error) {
     console.error('Failed to initialize Firebase SDK:', error);

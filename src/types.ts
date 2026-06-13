@@ -17,7 +17,7 @@ export interface ChessMove {
   piece: string; // "p", "r", "n", "b", "q", "k"
   color: 'w' | 'b';
   san: string; // "e4", "Nf3"
-  promotion?: string; // "q" if promoted
+  promotion?: string | null; // "q" if promoted
   timestamp: number; // Milliseconds elapsed
 }
 

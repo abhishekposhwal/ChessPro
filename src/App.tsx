@@ -634,7 +634,7 @@ export default function App() {
             san: moveResult.san,
             piece: moveResult.piece,
             color: moveResult.color,
-            promotion,
+            promotion: promotion || null,
             timestamp: Date.now(),
           };
           const updatedHistory = [...game.history, activeMove];
@@ -702,7 +702,7 @@ export default function App() {
             san: moveResult.san,
             piece: moveResult.piece,
             color: moveResult.color,
-            promotion,
+            promotion: promotion || null,
             timestamp: Date.now(),
           };
           const updatedHistory = [...game.history, activeMove];
@@ -755,7 +755,7 @@ export default function App() {
                       san: oppMoveResult.san,
                       piece: oppMoveResult.piece,
                       color: oppMoveResult.color,
-                      promotion: opponentMove.promotion,
+                      promotion: opponentMove.promotion || null,
                       timestamp: Date.now(),
                     };
                     const finalState: GameState = {
@@ -831,7 +831,7 @@ export default function App() {
         san: moveResult.san,
         piece: moveResult.piece,
         color: moveResult.color,
-        promotion,
+        promotion: promotion || null,
         timestamp: Date.now(),
       };
 
@@ -1039,8 +1039,8 @@ export default function App() {
       turn: 'w',
       winner: null,
       timeControl,
-      whiteTimeRemaining: totalSecs,
-      blackTimeRemaining: totalSecs,
+      whiteTimeRemaining: totalSecs !== undefined ? totalSecs : null,
+      blackTimeRemaining: totalSecs !== undefined ? totalSecs : null,
       lastMoveTimestamp: Date.now(),
       drawOfferedBy: null,
       createdAt: Date.now(),
@@ -1310,7 +1310,7 @@ export default function App() {
       const gameRef = doc(db, 'games', game.gameId);
       try {
         await updateDoc(gameRef, {
-          drawOfferedBy: currentUser?.uid,
+          drawOfferedBy: currentUser?.uid || null,
         });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `games/${game.gameId}`);

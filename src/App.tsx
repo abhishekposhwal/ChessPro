@@ -1562,45 +1562,7 @@ export default function App() {
 
       {/* Main Container Stage body */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 mt-4 flex-1 w-full grid grid-cols-1">
-        {firebaseSetupError && (
-          <div className="mb-4 bg-amber-950/45 border-2 border-amber-500/30 rounded-lg p-5 flex flex-col md:flex-row items-start gap-4 text-zinc-350 shadow-lg animate-fadeIn">
-            <div className="p-2.5 bg-amber-900/50 rounded-lg text-amber-400 shrink-0 mt-0.5">
-              <AlertCircle className="w-5 h-5 animate-pulse" />
-            </div>
-            <div className="flex-1 space-y-3">
-              <h4 className="text-sm font-bold text-amber-200 flex items-center gap-2">
-                ⚠️ Custom Firebase Configuration Action Needed
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Your application loaded your custom Firebase details, but some cloud operations were blocked:
-              </p>
-              <div className="font-mono text-[11px] bg-[#12110f] p-3 rounded border border-zinc-800 text-amber-400 select-all overflow-x-auto max-w-full">
-                {firebaseSetupError}
-              </div>
-              
-              <div className="text-xs bg-[#1a1815]/60 p-4 rounded border border-amber-900/20 space-y-2.5 leading-relaxed">
-                <p className="font-bold text-zinc-200">Please complete these three simple steps in your Firebase Console:</p>
-                <ol className="list-decimal pl-4.5 space-y-2 text-zinc-400">
-                  <li>
-                    <strong className="text-zinc-200">Deploy Security Rules:</strong> Go to the file <code className="font-mono text-zinc-300 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">firestore.rules</code> (at the root of this workspace), copy all its contents, and paste them into your <strong className="text-zinc-200">Firebase Console &gt; Firestore Database &gt; Rules tab</strong>, then click <strong className="text-zinc-200">Publish</strong>.
-                  </li>
-                  <li>
-                    <strong className="text-zinc-200">Enable Auth Providers:</strong> In your <strong className="text-zinc-200">Firebase Console &gt; Authentication &gt; Sign-in method</strong> tab, click <strong className="text-zinc-200">Add new provider</strong> and enable both <strong className="text-zinc-200">Google</strong> and <strong className="text-zinc-200">Anonymous</strong>, then save them.
-                  </li>
-                  <li>
-                    <strong className="text-zinc-200">Add Vercel to Authorized Domains:</strong> In your <strong className="text-zinc-200">Authentication &gt; Settings &gt; Authorized domains</strong> list, add your deployed Vercel domain (e.g. <code className="font-mono text-emerald-400">{window.location.hostname}</code>) so the pop-up authentication functions perfectly.
-                  </li>
-                </ol>
-              </div>
-            </div>
-            <button 
-              onClick={() => setFirebaseSetupError(null)} 
-              className="text-xs font-semibold text-zinc-400 hover:text-white bg-[#312e2b] border border-zinc-700 md:self-auto px-3 py-1.5 rounded hover:bg-[#3d3a37] transition shrink-0"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
+        {/* Firebase Setup Warning has been removed per user request */}
 
         {!game ? (
           /* Landing options & matchmaking lists */

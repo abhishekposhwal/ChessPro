@@ -536,27 +536,7 @@ export default function Lobby({
                     </p>
                   </div>
 
-                  {/* How it Works Under the Hood Box */}
-                  <div className="mt-3.5 p-3.5 bg-[#211f1c]/70 border border-[#3c3730] rounded-md text-xs text-zinc-400 space-y-2">
-                    <p className="font-bold text-green-400 flex items-center gap-1.5 h-4">
-                      <Wifi className="w-3.5 h-3.5 text-green-400 animate-pulse" />
-                      How the Synchronization Works Under the Hood
-                    </p>
-                    <p className="leading-relaxed text-[11px] text-zinc-300">
-                      When two distinct users are connected, the app synchronizes instantly using efficient real-time listeners:
-                    </p>
-                    <ul className="list-disc pl-4 space-y-1 text-[11px] text-zinc-400">
-                      <li>
-                        <strong className="text-zinc-300">Dynamic Listeners:</strong> Both players subscribe to the game document using Firestore's <code className="text-green-300 font-mono text-[10px] bg-black/40 px-1 py-0.5 rounded">onSnapshot() </code> listener.
-                      </li>
-                      <li>
-                        <strong className="text-zinc-300">Move Broadcast:</strong> When Player 1 makes a move, the local state performs an optimistic render for responsiveness, then publishes the new FEN string, move history, and turn indicator to Firestore.
-                      </li>
-                      <li>
-                        <strong className="text-zinc-300">Instant UI Updates:</strong> Player 2's browser receives the snapshot update immediately, syncing the Board's <code className="text-green-300 font-mono text-[10px] bg-black/40 px-1 py-0.5 rounded">fen</code> prop and flipping the turn control to allow Player 2 to play their move.
-                      </li>
-                    </ul>
-                  </div>
+
                 </div>
               </div>
             )}

@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with chess statistics and rating",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user ID" },
+        "displayName": { "type": "string", "description": "Human readable name" },
+        "photoURL": { "type": "string", "description": "Profile picture URL" },
+        "rating": { "type": "number", "description": "Elo rating" },
+        "gamesPlayed": { "type": "number", "description": "Total games completed" },
+        "gamesWon": { "type": "number", "description": "Total chess wins" },
+        "status": { "type": "string", "description": "Online, in-game, offline status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when profile created" }
+      },
+      "required": ["uid", "displayName", "rating", "gamesPlayed", "gamesWon", "createdAt"]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "Active real-time or completed chess game state",
+      "type": "object",
+      "properties": {
+        "gameId": { "type": "string", "description": "The unique game ID" },
+        "whitePlayerId": { "type": "string", "description": "UID of the white player" },
+        "whitePlayerName": { "type": "string", "description": "Display name of the white player" },
+        "blackPlayerId": { "type": "string", "description": "UID of the black player" },
+        "blackPlayerName": { "type": "string", "description": "Display name of the black player" },
+        "status": { "type": "string", "description": "waiting, playing, checkmate, stalemate, draw, draw-agreement, resign, timeout" },
+        "fen": { "type": "string", "description": "Forsyth-Edwards Notation (FEN) representing board state" },
+        "history": { "type": "array", "description": "Ordered array of moves made in SAN or custom object format" },
+        "turn": { "type": "string", "description": "Active side: 'w' or 'b'" },
+        "winner": { "type": "string", "description": "Winner identification: 'w', 'b', or 'draw' or null" },
+        "timeControl": { "type": "string", "description": "Match speed: '1m', '3m', '5m', '10m', '30m' or 'untimed'" },
+        "whiteTimeRemaining": { "type": "number", "description": "Seconds remaining for White" },
+        "blackTimeRemaining": { "type": "number", "description": "Seconds remaining for Black" },
+        "lastMoveTimestamp": { "type": "number", "description": "Epoch millisecond when the last move was recorded" },
+        "drawOfferedBy": { "type": "string", "description": "UID of side offering draw" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last operation timestamp" }
+      },
+      "required": ["gameId", "status", "fen", "turn", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Exposes chess user stats and active states"
+    },
+    "games/{gameId}": {
+      "schema": "Game",
+      "description": "Manages game matchmaking, move validation syncing, and clock timers in real-time"
+    }
+  }
+}

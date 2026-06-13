@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny Catch-all fortress gate
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User Profile security
+    match /users/{userId} {
+      allow read: if true; // Open visibility for matchmaking ratings
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+    }
+
+    // Chess lobby & game states authorization
+    match /games/{gameId} {
+      allow get: if true; // Public spectating or joining game
+      allow list: if resource.data.status == 'waiting';
+      allow create: if isSignedIn() && isValidId(gameId);
+      allow update: if isSignedIn() && isValidId(gameId) && (
+        resource.data.whitePlayerId == request.auth.uid || 
+        resource.data.blackPlayerId == request.auth.uid ||
+        (resource.data.blackPlayerId == null && request.resource.data.blackPlayerId == request.auth.uid) ||
+        (resource.data.whitePlayerId == null && request.resource.data.whitePlayerId == request.auth.uid)
+      );
+      allow delete: if isSignedIn() && isValidId(gameId) && (
+        resource.data.whitePlayerId == request.auth.uid || 
+        resource.data.blackPlayerId == request.auth.uid ||
+        resource.data.status == 'waiting'
+      ) && (
+        resource.data.status == 'waiting'
+      );
+
+      // Live Room chats
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidId(messageId) && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

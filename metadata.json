@@ -1,0 +1,6 @@
+{
+  "name": "Chess.com Clone",
+  "description": "A fully featured Chess.com clone with live multiplayer matchmaking, real-time sync, customizable time controls, and interactive computer opponents using React, Tailwind CSS, and Firebase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

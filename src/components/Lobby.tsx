@@ -524,17 +524,7 @@ export default function Lobby({
                     </div>
                   )}
 
-                  {/* Multi-Tab Testing Tip Box */}
-                  <div className="mt-3.5 p-3.5 bg-[#1b1a17]/55 border border-[#312e2b] rounded-md text-xs text-zinc-400 space-y-1.5">
-                    <p className="font-bold text-zinc-200 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse animate-duration-1000" />
-                      Testing Matchmaking / Real-time play?
-                    </p>
-                    <p className="leading-relaxed text-[11px]">
-                      If you open two tabs in the same browser, they share the same Firebase authentication identity and won't be registered as separate players. 
-                      To test real-time multiplayer, <strong>open the second player in an Incognito / Private window or a completely different browser</strong>. This creates a separate player session with a distinct player ID!
-                    </p>
-                  </div>
+
 
 
                 </div>

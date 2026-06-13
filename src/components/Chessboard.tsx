@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, ShieldAlert } from 'lucide-react';
@@ -205,6 +205,10 @@ export default function Chessboard({
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [promotionPending, setPromotionPending] = useState<{ from: string; to: string } | null>(null);
   const [isFlipped, setIsFlipped] = useState(playerColor === 'b');
+
+  useEffect(() => {
+    setIsFlipped(playerColor === 'b');
+  }, [playerColor]);
 
   const board = chess.board();
   const isChecked = chess.inCheck();

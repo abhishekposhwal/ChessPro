@@ -445,7 +445,7 @@ export default function App() {
 
   // 2. Real-time Subscription to Public Lobby Open Rooms (when authenticated and Firebase connected)
   useEffect(() => {
-    if (!isFirebaseConfigured || !db) return;
+    if (!isFirebaseConfigured || !db || !currentUser) return;
 
     const gamesCol = collection(db, 'games');
     const waitingQuery = query(gamesCol, where('status', '==', 'waiting'));
@@ -474,7 +474,7 @@ export default function App() {
     );
 
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   // 3. Local Engine Move Calculator (Supports difficulty 1-4 algorithmic chess AI)
   const calculateLocalEngineMove = (currentFen: string, difficulty: number): ChessMove | null => {
@@ -873,6 +873,9 @@ export default function App() {
       if (isLocalGame) {
         setGame(nextState);
       } else if (isFirebaseConfigured && db) {
+        // Optimistic UI updates - render the move instantly for unmatched responsiveness
+        setGame(nextState);
+
         // Broadcast immediately to Firestore Online Room Document
         const gameRef = doc(db, 'games', game.gameId);
         try {
@@ -888,6 +891,7 @@ export default function App() {
             updatedAt: nextState.updatedAt,
           });
         } catch (err) {
+          console.warn('Online move synchronization failed, rolling back:', err);
           handleFirestoreError(err, OperationType.UPDATE, `games/${game.gameId}`);
         }
       }
